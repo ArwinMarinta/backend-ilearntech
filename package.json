@@ -9,7 +9,8 @@
     "deleteTable": "node delete.table.js",
     "resetDb": "node db.reset.js",
     "seed": "npx prisma db seed",
-    "migrate": "prisma migrate deploy"
+    "migrate": "prisma migrate deploy",
+    "build": "node src/index.js"
   },
   "keywords": [],
   "author": "",
