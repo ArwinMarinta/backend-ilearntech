@@ -1,0 +1,367 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int                   @id @default(autoincrement())
+  uuid                String                @default(uuid())
+  name                String
+  email               String                @unique
+  googleId            String?               @map("google_id")
+  phone               BigInt?
+  password            String?
+  city                String?
+  country             String?
+  photoProfile        String?               @map("photo_prfile")
+  imageFilename       String?               @map("image_filename")
+  resetToken          String?               @map("reset_token") @db.Text
+  roleName            String                @map("role_name")
+  verified            Boolean               @default(false)
+  order               Order[]
+  userCourse          UserCourse[]
+  courseTestimonial   CourseTestimonial[]
+  discussion          Discussion[]
+  commentarDiscussion DiscussionCommentar[]
+  notification        Notification[]
+  transaction         Transaction[]
+  certificate         Certificate[]
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Certificate {
+  id                   Int                    @id @default(autoincrement())
+  addToLinkedin        String                 @db.Text              
+  urlCertificate       String                 @map("url_certificate")
+  userId               Int?                    @map("user_id")
+  user                 User?                   @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseId             Int                    @map("course_id")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  roleName  String   @map("role_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+model UserCourse {
+  id                   Int                    @id @default(autoincrement())
+  progress             Int
+  status               String
+  userId               Int?                    @map("user_id")
+  user                 User?                   @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseId             Int?                    @map("course_id")
+  course               Course?                 @relation(fields: [courseId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  userLearningProgress UserLearningProgress[]
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  @@map("user_courses")
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  otp       String   @map("otp")
+  email     String
+  expiredAt DateTime @map("expired_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otps")
+}
+
+model CourseCategory {
+  id            Int      @id @default(autoincrement())
+  name          String
+  slug          String   @unique
+  urlPhoto      String
+  imageFileName String?  @map("image_filename")
+  course        Course[]
+  isPublished   Boolean  @default(true) @map("is_published")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("course_categories")
+}
+
+model CourseType {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  course    Course[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("course_types")
+}
+
+model CourseLevel {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  course    Course[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("course_levels")
+}
+
+model CourseInstructor {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  email               String                @unique
+  password            String
+  roleName            String                @map("role_name")
+  photoProfile        String?               @map("photo_profile")
+  imageFilename       String?               @map("image_filename")
+  course              Course[]
+  commentarDiscussion DiscussionCommentar[]
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  @@map("course_instructors")
+}
+
+model CoursePromo {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  discount  Float
+  expiredAt DateTime @map("expired_at")
+  course    Course[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("course_promos")
+}
+
+model Course {
+  id                 Int                 @id @default(autoincrement())
+  title              String
+  slug               String              @unique
+  code               String
+  description        String              @db.Text
+  price              Float
+  requirements       String              @db.Text
+  taken              Int?
+  imageUrl           String              @map("image_url")
+  imageFilename      String?             @map("image_filename")
+  courseDiscussionId Int?                @unique @map("course_discussion_id")
+  courseDiscussion   CourseDiscussion?   @relation(fields: [courseDiscussionId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseInstructorId Int?                 @map("course_instructor_id")
+  courseInstructor   CourseInstructor?    @relation(fields: [courseInstructorId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseTypeId       Int?                 @map("course_type_id")
+  courseType         CourseType?          @relation(fields: [courseTypeId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseCategoryId   Int?                 @map("course_category_id")
+  courseCategory     CourseCategory?      @relation(fields: [courseCategoryId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseLevelId      Int?                 @map("course_level_id")
+  courseLevel        CourseLevel?         @relation(fields: [courseLevelId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  coursePromoId      Int?                @map("course_promo_id")
+  coursePromo        CoursePromo?        @relation(fields: [coursePromoId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  isPromo            Boolean             @default(false) @map("is_promo")
+  isPublished        Boolean             @default(true) @map("is_published")
+  courseModule       CourseModule[]
+  courseContent      CourseContent[]
+  order              Order[]
+  userCourse         UserCourse[]
+  courseTestimonial  CourseTestimonial[]
+  transactionItems   TransactionsItem[]
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  @@map("courses")
+}
+
+model CourseModule {
+  id            Int             @id @default(autoincrement())
+  title         String
+  slug          String
+  isPublished   Boolean           @default(true) @map("is_published")   
+  courseId      Int?             @map("course_id")
+  course        Course?          @relation(fields: [courseId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseContent CourseContent[]
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@map("course_modules")
+}
+
+model CourseContent {
+  id                   Int                    @id @default(autoincrement())
+  title                String
+  slug                 String
+  sequence             Int
+  videoUrl             String                 @map("video_url")
+  duration             Int
+  isPublished          Boolean           @default(true) @map("is_published")  
+  isDemo               Boolean                @default(false) @map("is_demo")
+  courseId             Int?                    @map("course_id")
+  course               Course?                 @relation(fields: [courseId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  moduleId             Int?                    @map("course_module_id")
+  courseModule         CourseModule?           @relation(fields: [moduleId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  userLearningProgress UserLearningProgress[]
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  @@map("course_contents")
+}
+
+model UserLearningProgress {
+  id           Int           @id @default(autoincrement())
+  isFinished   Boolean       @default(false) @map("is_finished")
+  contentId    Int?           @map("content_id")
+  content      CourseContent? @relation(fields: [contentId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  userCourseId Int?           @map("user_course_id")
+  userCourse   UserCourse?    @relation(fields: [userCourseId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  finishedAt   DateTime?     @map("finished_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@map("user_learning_progresses")
+}
+
+model CourseTestimonial {
+  id          Int    @id @default(autoincrement())
+  testimonial String @db.Text
+  rating      Float
+  userId      Int?
+  user        User?   @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseId    Int?
+  course      Course? @relation(fields: [courseId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+
+  @@unique([userId, courseId])
+  @@map("course_testimonials")
+}
+
+model CourseDiscussion {
+  id        Int          @id @default(autoincrement())
+  name      String
+  course    Course?
+  dicsussion Discussion[]
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@map("course_discussions")
+}
+
+model Discussion {
+  id                 Int                   @id @default(autoincrement())
+  title              String
+  question           String
+  urlPhoto           String?                @map("url_photo")
+  imageFilename      String?                @map("image_filename")
+  closed             Boolean               @default(false)
+  userId             Int?                   @map("user_id")
+  user               User?                  @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseDiscussionId Int?                   @map("course_discussion_id")
+  courseDiscussion   CourseDiscussion?      @relation(fields: [courseDiscussionId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  commentar          DiscussionCommentar[]
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+
+  @@map("discussions")
+}
+
+model DiscussionCommentar {
+  id             Int              @id @default(autoincrement())
+  commentar      String
+  urlPhoto       String?                @map("url_photo")
+  imageFilename  String?                @map("image_filename")
+  userId         Int?              @map("user_id")
+  user           User?             @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  instructorId   Int?              @map("instructor_id")
+  instructor     CourseInstructor? @relation(fields: [instructorId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  discussionId   Int?              @map("discussion_id")
+  discussion     Discussion?       @relation(fields: [discussionId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@map("commentar_discussions")
+}
+
+model Order {
+  id            Int       @id @default(autoincrement())
+  orderCode     String    @unique @map("order_code")
+  price         Float
+  status        String
+  successAt     DateTime?
+  paymentMethod String    @map("payment_method")
+  userId        Int?       @map("user_id")
+  user          User?      @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  courseId      Int?       @map("course_id")
+  course        Course?    @relation(fields: [courseId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  type      String
+  data      Json?
+  message   String?
+  userId    Int?       @map("user_id")
+  user      User?      @relation(fields: [userId], references: [id],  onDelete: SetNull, onUpdate: SetNull)
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("notifications")
+}
+
+model Transaction {
+  id                String              @id
+  userId            Int      @map("user_id")
+  total             Int
+  status            transactions_status
+  customerName      String              @map("customer_name")
+  customerEmail     String              @map("customer_email")
+  snapToken         String?             @map("snap_token")
+  snapRedirectUrl   String?             @map("snap_redirect_url")
+  paymentMethod     String?             @map("payment_method")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  user              User @relation(fields: [userId], references: [id], onUpdate: Restrict)
+  transaction_items TransactionsItem[]
+
+  @@map("transactions")
+}
+
+model TransactionsItem {
+  id            String      @id
+  transactionId String      @map("transaction_id")
+  courseId      Int         @map("course_id")
+  courseTitle   String      @map("course_title")
+  price         Int
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onUpdate: Restrict)
+  course        Course      @relation(fields: [courseId], references: [id], onUpdate: Restrict)
+
+  @@map("transactions_items")
+}
+
+enum transactions_status {
+  PENDING_PAYMENT
+  PAID
+  CANCELED
+}
