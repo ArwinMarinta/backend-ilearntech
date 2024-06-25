@@ -4,7 +4,7 @@ const express = require("express"),
   // { PORT } = require("./src/config"),
   bodyParser = require("body-parser"),
   cors = require("cors"),
-  router = require("./src/routes"),
+  router = require("./src/routes/index"),
   /* rateLimiter = require('./middlewares/rate.limiter'), */
   app = express();
 
@@ -16,11 +16,12 @@ const corsConfig = {
   methods: ["GET", "POST", "PUT", "DELETE"],
 };
 
+app.use(cors(corsConfig));
+app.options("", cors(corsConfig));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.json());
-app.use(cors(corsConfig));
-app.options("", cors(corsConfig));
+
 /* app.use(rateLimiter) */
 app.use("/api/v1", router);
 
