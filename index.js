@@ -1,8 +1,8 @@
 const express = require("express"),
-  { PORT } = require("./config"),
+  { PORT } = require("./src/config"),
   bodyParser = require("body-parser"),
   cors = require("cors"),
-  router = require("./routes"),
+  router = require("./src/routes"),
   /* rateLimiter = require('./middlewares/rate.limiter'), */
   app = express();
 

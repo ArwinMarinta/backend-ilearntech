@@ -2,15 +2,15 @@
   "name": "final-project",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "dev": "nodemon index.js",
+    "start": "node index.js",
     "deleteTable": "node delete.table.js",
     "resetDb": "node db.reset.js",
     "seed": "npx prisma db seed",
     "migrate": "prisma migrate deploy",
-    "build": "node src/index.js"
+    "build": "node index.js"
   },
   "keywords": [],
   "author": "",
