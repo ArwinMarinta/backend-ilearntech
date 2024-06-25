@@ -1,10 +1,14 @@
+// const { PORT } = require("./src/config");
+
 const express = require("express"),
-  { PORT } = require("./src/config"),
+  // { PORT } = require("./src/config"),
   bodyParser = require("body-parser"),
   cors = require("cors"),
   router = require("./src/routes"),
   /* rateLimiter = require('./middlewares/rate.limiter'), */
   app = express();
+
+const PORT = 5000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
