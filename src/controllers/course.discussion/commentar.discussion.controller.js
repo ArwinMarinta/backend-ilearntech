@@ -1,186 +1,195 @@
-const db = require('../../../prisma/connection'),
-    utils = require('../../utils/utils'),
-    imageKitFile = require('../../utils/imageKitFile')
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
+const imageKitFile = require("../../utils/imageKitFile");
 
 module.exports = {
+  createCommentarByIdDiscussion: async (req, res) => {
+    try {
+      let uploadFileUrl;
+      let uploadFileName;
 
-    createCommentarByIdDiscussion: async (req, res) => {
-        try {
+      if (req.file) {
+        const photoCommentar = req.file;
+        const allowedMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+        const allowedSizeMb = 2;
 
-            let uploadFileUrl
-            let uploadFileName
+        if (!allowedMimes.includes(photoCommentar.mimetype))
+          return res
+            .status(409)
+            .json(utils.apiError("Format gambar tidak diperbolehkan"));
 
-            if(req.file) {
+        if (photoCommentar.size / (1024 * 1024) > allowedSizeMb)
+          return res
+            .status(409)
+            .json(utils.apiError("Gambar kategori tidak boleh lebih dari 2mb"));
 
-                const photoCommentar = req.file
-                const allowedMimes = [ "image/png","image/jpeg","image/jpg","image/webp" ]
-                const allowedSizeMb = 2
-    
-                if(!allowedMimes.includes(photoCommentar.mimetype)) return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"))
-    
-                if((photoCommentar.size / (1024*1024)) > allowedSizeMb) return res.status(409).json(utils.apiError("Gambar kategori tidak boleh lebih dari 2mb"))
-    
-                const uploadFile = await imageKitFile.upload(photoCommentar)
-    
-                if(!uploadFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
+        const uploadFile = await imageKitFile.upload(photoCommentar);
 
-                uploadFileUrl = uploadFile.url
-                uploadFileName = uploadFile.name
-            }
-            
-            const { commentar, discussionId } = req.body
-            const userId = res.user.id
+        if (!uploadFile)
+          return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
 
-            const roleName = res.user.roleName
-            
-            const checkDiscussion = await db.discussion.findFirst({
-                where: {
-                    id: parseInt(discussionId)
-                }
-            })
+        uploadFileUrl = uploadFile.url;
+        uploadFileName = uploadFile.name;
+      }
 
-            if(!checkDiscussion) return res.status(404).json(utils.apiError("Diskusi tidak ditemukan"))
+      const { commentar, discussionId } = req.body;
+      const userId = res.user.id;
 
-            if(checkDiscussion.closed === true) return res.status(403).json(utils.apiError("Diskusi sudah ditutup"))
+      const roleName = res.user.roleName;
 
-            let discussionCommentar
-            let message = 'Berhasil membuat komentar berdasarkan diskusi '
+      const checkDiscussion = await db.discussion.findFirst({
+        where: {
+          id: parseInt(discussionId),
+        },
+      });
 
-            if( roleName === 'user' ){
-                discussionCommentar = await db.discussionCommentar.create({
-                    data: {
-                       commentar: commentar,
-                       discussionId: parseInt(discussionId),
-                       userId: parseInt(userId),
-                       urlPhoto: uploadFileUrl,
-                       imageFilename: uploadFileName
-                    }
-                })
+      if (!checkDiscussion)
+        return res.status(404).json(utils.apiError("Diskusi tidak ditemukan"));
 
-                message += `menggunakan akun 'user'`
-            }
+      if (checkDiscussion.closed === true)
+        return res.status(403).json(utils.apiError("Diskusi sudah ditutup"));
 
-            if (roleName === 'instructor') {
-                discussionCommentar = await db.discussionCommentar.create({
-                    data: {
-                       commentar: commentar,
-                       discussionId: parseInt(discussionId),
-                       instructorId: parseInt(userId),
-                       urlPhoto: uploadFileUrl,
-                       imageFilename: uploadFileName
-                    }
-                })
+      let discussionCommentar;
+      let message = "Berhasil membuat komentar berdasarkan diskusi ";
 
-                message += `menggunakan akun 'instructor'`
-            }
+      if (roleName === "user") {
+        discussionCommentar = await db.discussionCommentar.create({
+          data: {
+            commentar: commentar,
+            discussionId: parseInt(discussionId),
+            userId: parseInt(userId),
+            urlPhoto: uploadFileUrl,
+            imageFilename: uploadFileName,
+          },
+        });
 
+        message += `menggunakan akun 'user'`;
+      }
 
-            return res.status(201).json(utils.apiSuccess(message, discussionCommentar))
+      if (roleName === "instructor") {
+        discussionCommentar = await db.discussionCommentar.create({
+          data: {
+            commentar: commentar,
+            discussionId: parseInt(discussionId),
+            instructorId: parseInt(userId),
+            urlPhoto: uploadFileUrl,
+            imageFilename: uploadFileName,
+          },
+        });
 
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"))
+        message += `menggunakan akun 'instructor'`;
+      }
+
+      return res.status(201).json(utils.apiSuccess(message, discussionCommentar));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
+    }
+  },
+
+  getCommentarById: async (req, res) => {
+    try {
+      const commentarId = req.params.id;
+
+      const commentar = await db.discussionCommentar.findFirst({
+        where: {
+          id: parseInt(commentarId),
+        },
+      });
+
+      return res.status(200).json(utils.apiSuccess(commentar));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
+    }
+  },
+
+  updateCommentarByIdCourse: async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const commentars = await db.discussionCommentar.findFirst({
+        where: {
+          id: id,
+        },
+      });
+
+      if (!commentars)
+        return res.status(404).json(utils.apiError("Kategori Tidak di temukan"));
+
+      const photoCommentar = req.file;
+
+      const allowedMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
+      const allowedSizeMb = 2;
+
+      let imageUrl = null;
+      let imageFileName = null;
+
+      if (typeof photoCommentar === "undefined") {
+        imageUrl = commentars.urlPhoto;
+        imageFileName = commentars.imageFilename;
+      } else {
+        if (!allowedMimes.includes(photoCommentar.mimetype))
+          return res
+            .status(409)
+            .json(utils.apiError("Format gambar tidak diperbolehkan"));
+        if (photoCommentar.size / (1024 * 1024) > allowedSizeMb)
+          return res
+            .status(409)
+            .json(utils.apiError("Gambar tidak boleh lebih dari 2mb"));
+        if (checkCategory.imageFileName != null) {
+          const deleteFile = await imageKitFile.delete(checkCategory.imageFileName);
+          if (!deleteFile)
+            return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
         }
-    },
 
-    getCommentarById: async (req, res) => {
-        try {
+        const uploadFile = await imageKitFile.upload(photoCommentar);
 
-            const commentarId = req.params.id
+        if (!uploadFile)
+          return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
 
-            const commentar = await db.discussionCommentar.findFirst({
-                where: {
-                    id: parseInt(commentarId)
-                }
-            })
+        imageUrl = uploadFile.url;
+        imageFileName = uploadFile.name;
+      }
 
-            return res.status(200).json(utils.apiSuccess(commentar))
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"))
-        }
-    },
+      const { commentar, discussionId } = req.body;
 
-    updateCommentarByIdCourse: async (req, res) => {
-        try {
-            const id = parseInt(req.params.id)
+      let message = "Berhasil update komentar berdasarkan diskusi ";
 
-            const commentars = await db.discussionCommentar.findFirst({
-                where: {
-                    id: id,
-                },
-            })
+      const discussionCommentar = await db.discussionCommentar.update({
+        where: {
+          id: commentars.id,
+        },
+        data: {
+          commentar: commentar,
+          discussionId: parseInt(discussionId),
+          urlPhoto: imageUrl,
+          imageFilename: imageFileName,
+        },
+      });
 
-            if (!commentars) return res.status(404).json(utils.apiError("Kategori Tidak di temukan"))
+      return res.status(201).json(utils.apiSuccess(message, discussionCommentar));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
+    }
+  },
 
-            const photoCommentar = req.file
+  deleteCommentarById: async (req, res) => {
+    try {
+      const commentarId = req.params.id;
 
-            const allowedMimes = ['image/png','image/jpeg','image/jpg','image/webp']
+      await db.discussionCommentar.delete({
+        where: {
+          id: parseInt(commentarId),
+        },
+      });
 
-            const allowedSizeMb = 2
-
-            let imageUrl = null
-            let imageFileName = null
-
-            if (typeof photoCommentar === 'undefined') {
-
-                imageUrl = commentars.urlPhoto
-                imageFileName = commentars.imageFilename
-
-            } else {
-                if(!allowedMimes.includes(photoCommentar.mimetype)) return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"))
-                if((photoCommentar.size / (1024*1024)) > allowedSizeMb) return res.status(409).json(utils.apiError("Gambar tidak boleh lebih dari 2mb"))
-                if(checkCategory.imageFileName != null) {
-                    const deleteFile = await imageKitFile.delete(checkCategory.imageFileName)
-                    if(!deleteFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-                }
-
-                const uploadFile = await imageKitFile.upload(photoCommentar)
-
-                if(!uploadFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-
-                imageUrl = uploadFile.url
-                imageFileName = uploadFile.name
-            }
-
-            const { commentar, discussionId } = req.body
-          
-            let message = 'Berhasil update komentar berdasarkan diskusi '
-           
-                const discussionCommentar = await db.discussionCommentar.update({
-                    where: {
-                        id: commentars.id
-                    },
-                    data: {
-                        commentar: commentar,
-                        discussionId: parseInt(discussionId),
-                        urlPhoto: imageUrl,
-                        imageFilename: imageFileName
-                    }
-                })
-
-            return res.status(201).json(utils.apiSuccess(message, discussionCommentar))
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"))
-        }
-    },
-
-    deleteCommentarById: async (req, res) => {
-        try {
-
-            const commentarId = req.params.id
-
-            await db.discussionCommentar.delete({
-                where: {
-                    id: parseInt(commentarId)
-                }
-            })
-
-            return res.status(200).json(utils.apiSuccess("Berhasil menghapus commentar"))
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"))
-        }
-    },
-}
+      return res.status(200).json(utils.apiSuccess("Berhasil menghapus commentar"));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
+    }
+  },
+};

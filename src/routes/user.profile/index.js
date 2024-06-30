@@ -1,7 +1,7 @@
-const express = require("express"),
-    userProfileRoute = require('./user.profile.route'),
-    router = express.Router()
-    
-router.use(userProfileRoute)
+const express = require("express");
+const userProfileRoute = require("./user.profile.route");
+const router = express.Router();
 
-module.exports = router
+router.use(userProfileRoute);
+
+module.exports = router;

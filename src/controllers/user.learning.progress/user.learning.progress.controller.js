@@ -1,75 +1,88 @@
-const db = require('../../../prisma/connection'),
-    utils = require('../../utils/utils')
-   
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
+
 module.exports = {
+  getLearningProgress: async (req, res) => {
+    try {
+      const userCourseId = parseInt(req.params.userCourseId);
+      const contentId = parseInt(req.params.contentId);
 
-    getLearningProgress: async(req, res) => {
-        try {
+      if (!userCourseId)
+        return res
+          .status(422)
+          .json(utils.apiError("Params userCourseId tidak boleh kosong"));
+      if (!contentId)
+        return res
+          .status(422)
+          .json(utils.apiError("Params contentId tidak boleh kosong"));
 
-            const userCourseId = parseInt(req.params.userCourseId)
-            const contentId = parseInt(req.params.contentId)
-            
-            if (!userCourseId) return res.status(422).json(utils.apiError("Params userCourseId tidak boleh kosong"))
-            if (!contentId) return res.status(422).json(utils.apiError("Params contentId tidak boleh kosong"))
+      const checkUserCourse = await db.userCourse.findFirst({
+        where: {
+          id: userCourseId,
+          userId: res.user.id,
+        },
+      });
 
-            const checkUserCourse = await db.userCourse.findFirst({
-                where:{
-                    id: userCourseId,
-                    userId: res.user.id
-                },
-               
-            })
+      if (!checkUserCourse)
+        return res.status(404).json(utils.apiError("User course tidak ditemukkan"));
 
-            if(!checkUserCourse) return res.status(404).json(utils.apiError("User course tidak ditemukkan"))
-            
-            const userLearningProgress = await db.userLearningProgress.findFirst({
-                where: {
-                    contentId: contentId,
-                    userCourseId: userCourseId
-                }
-            })
+      const userLearningProgress = await db.userLearningProgress.findFirst({
+        where: {
+          contentId: contentId,
+          userCourseId: userCourseId,
+        },
+      });
 
-            if(!userLearningProgress) return res.status(404).json(utils.apiError("User course id atau content id tidak ada"))
+      if (!userLearningProgress)
+        return res
+          .status(404)
+          .json(utils.apiError("User course id atau content id tidak ada"));
 
-            return res.status(200).json(utils.apiSuccess("Berhasil mendapatkan learning progress", userLearningProgress))
+      return res
+        .status(200)
+        .json(
+          utils.apiSuccess("Berhasil mendapatkan learning progress", userLearningProgress)
+        );
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
+    }
+  },
 
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-        }
-    },
+  updateLearningProgress: async (req, res) => {
+    try {
+      const userCourseId = parseInt(req.params.userCourseId);
+      const contentId = parseInt(req.params.contentId);
 
-    updateLearningProgress: async(req, res) => {
-        try {
+      if (!userCourseId)
+        return res.status(422).json(utils.apiError("user course id tidak boleh kosong"));
 
-            const userCourseId = parseInt(req.params.userCourseId)
-            const contentId = parseInt(req.params.contentId)
+      const userCourse = await db.userCourse.findUnique({
+        where: {
+          id: userCourseId,
+          userId: res.user.id,
+        },
+      });
 
-            if (!userCourseId) return res.status(422).json(utils.apiError("user course id tidak boleh kosong"))
+      if (!userCourse)
+        return res.status(404).json(utils.apiError("user course id tidak ditemukan"));
 
-            const userCourse = await db.userCourse.findUnique({
-                where: {
-                    id: userCourseId,
-                    userId: res.user.id
-                }
-            })
+      const userLearningProgress = await db.userLearningProgress.findFirst({
+        where: {
+          contentId: contentId,
+          userCourseId: userCourseId,
+        },
+      });
 
-            if(!userCourse) return res.status(404).json(utils.apiError("user course id tidak ditemukan"))
+      if (!userLearningProgress)
+        return res.status(404).json(utils.apiError("User LEarning progress tidak ada"));
 
-            const userLearningProgress = await db.userLearningProgress.findFirst({
-                where:{
-                    contentId: contentId,
-                    userCourseId: userCourseId,
-                }
-            })
+      /* console.log("============================== ", userLearningProgress) */
 
-            if(!userLearningProgress) return res.status(404).json(utils.apiError("User LEarning progress tidak ada"))
+      if (userLearningProgress.isFinished)
+        return res.status(500).json(utils.apiError("Konten sudah diselesaikan"));
 
-            /* console.log("============================== ", userLearningProgress) */
-
-            if(userLearningProgress.isFinished) return res.status(500).json(utils.apiError("Konten sudah diselesaikan"))
-
-           /*  const content = await db.courseContent.findFirst({
+      /*  const content = await db.courseContent.findFirst({
                 where: {
                     id: contentId
                 }
@@ -96,70 +109,68 @@ module.exports = {
                 if(previousLearning.isFinished === false) return res.status(403).json(utils.apiError("Content sebelumnya belum diselesaikan"))
             } */
 
-            const course = await db.course.findUnique({
-                where: {
-                    id: userCourse.courseId
+      const course = await db.course.findUnique({
+        where: {
+          id: userCourse.courseId,
+        },
+        include: {
+          courseModule: {
+            include: {
+              _count: {
+                select: {
+                  courseContent: true,
                 },
-                include: {
-                    courseModule: {
-                        include: {
-                            _count: {
-                                select: {
-                                    courseContent: true
-                                }
-                            }
-                        }
-                    }
-                }
-            })
+              },
+            },
+          },
+        },
+      });
 
-            let totalContent = 0
-         
-            course.courseModule.forEach(async (item, index, array) => {
-                totalContent += item._count.courseContent
-            })
+      let totalContent = 0;
 
-            const data = await db.userLearningProgress.update({
-                where: {
-                    id: userLearningProgress.id
-                },
-                data: {
-                    isFinished: true,
-                    finishedAt: new Date()
-                }
-            })
+      course.courseModule.forEach(async (item, index, array) => {
+        totalContent += item._count.courseContent;
+      });
 
-            const totalFinished = await db.userLearningProgress.count({
-                where:{
-                    userCourseId: userCourse.id,
-                    isFinished: true
-                }
-            })
-            
-            let progress = (totalFinished / totalContent) * 100
+      const data = await db.userLearningProgress.update({
+        where: {
+          id: userLearningProgress.id,
+        },
+        data: {
+          isFinished: true,
+          finishedAt: new Date(),
+        },
+      });
 
-            let status = "In Progress"
+      const totalFinished = await db.userLearningProgress.count({
+        where: {
+          userCourseId: userCourse.id,
+          isFinished: true,
+        },
+      });
 
-            if(totalFinished == totalContent)
-            {
-               status = "Selesai"
-            }
+      let progress = (totalFinished / totalContent) * 100;
 
-            await db.userCourse.update({
-                where: {
-                    id: userCourse.id
-                },
-                data : {
-                    progress: progress,
-                    status: status
-                }
-            })
+      let status = "In Progress";
 
-            return res.status(200).json(utils.apiSuccess("Konten berhasil diselesaikan", data))        
-            
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-        }
+      if (totalFinished == totalContent) {
+        status = "Selesai";
+      }
+
+      await db.userCourse.update({
+        where: {
+          id: userCourse.id,
+        },
+        data: {
+          progress: progress,
+          status: status,
+        },
+      });
+
+      return res.status(200).json(utils.apiSuccess("Konten berhasil diselesaikan", data));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
     }
-}
+  },
+};

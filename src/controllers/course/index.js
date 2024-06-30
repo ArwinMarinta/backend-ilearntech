@@ -1,12 +1,12 @@
-const course = require("./course.controller"),
-  courseInstructor = require("./course.instructor.controller"),
-  coursePromo = require("./course.promo.controller"),
-  courseModule = require("./course.module.controller"),
-  courseContent = require("./course.content.controller"),
-  courseCategory = require("./course.category.controller"),
-  courseType = require("./course.type.controller"),
-  courseLevel = require("./course.level.controller"),
-  courseTestimonial = require('./course.testimonial')
+const course = require("./course.controller")
+ const courseInstructor = require("./course.instructor.controller")
+ const coursePromo = require("./course.promo.controller")
+ const courseModule = require("./course.module.controller")
+ const courseContent = require("./course.content.controller")
+ const courseCategory = require("./course.category.controller")
+ const courseType = require("./course.type.controller")
+ const courseLevel = require("./course.level.controller")
+  const courseTestimonial = require('./course.testimonial')
 
 module.exports = {
   course,

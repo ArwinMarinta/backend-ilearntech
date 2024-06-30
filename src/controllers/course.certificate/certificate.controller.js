@@ -1,37 +1,38 @@
-const db = require('../../../prisma/connection'),
-  utils = require('../../utils/utils'),
-  puppeteer = require('puppeteer'),
-  { readFileSync } = require('fs'),
-  { KEY_FILENAME, PROJECT_ID } = require('../../config'),
-  fs = require('fs'),
-  { Storage } = require('@google-cloud/storage');
-
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
+const puppeteer = require("puppeteer");
+const { readFileSync } = require("fs");
+const { KEY_FILENAME, PROJECT_ID } = require("../../config");
+const fs = require("fs");
+const { Storage } = require("@google-cloud/storage");
 
 module.exports = {
   createCertificate: async (req, res) => {
     try {
-
-      const userId = res.user.id
-      const courseId = req.params.courseId
+      const userId = res.user.id;
+      const courseId = req.params.courseId;
 
       const user = await db.user.findFirst({
         where: {
-          id: userId
-        }
-      })
+          id: userId,
+        },
+      });
 
-      const name = user.name
+      const name = user.name;
 
       const course = await db.course.findFirst({
         where: {
-          id: parseInt(courseId)
-        }
-      })
+          id: parseInt(courseId),
+        },
+      });
 
-      const courseName = course.title
+      const courseName = course.title;
 
       const generatePDF = async () => {
-        const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const browser = await puppeteer.launch({
+          headless: "new",
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
         const page = await browser.newPage();
 
         const htmlContent = `
@@ -157,20 +158,24 @@ module.exports = {
             </div>
           </body>
         </html>
-        `
+        `;
 
-        await page.setContent(htmlContent)
+        await page.setContent(htmlContent);
 
         const htmlDimensions = await page.evaluate(() => {
-          const body = document.querySelector('body');
+          const body = document.querySelector("body");
           return {
             width: body.offsetWidth,
             height: body.offsetHeight,
           };
-        })
+        });
 
         const pdfPath = `./${name}-${courseName}.pdf`;
-        await page.pdf({ path: pdfPath, width: htmlDimensions.width, height:htmlDimensions.height })
+        await page.pdf({
+          path: pdfPath,
+          width: htmlDimensions.width,
+          height: htmlDimensions.height,
+        });
 
         await browser.close();
 
@@ -180,21 +185,21 @@ module.exports = {
       const uploadFileToGCS = async (pdfPath) => {
         const storage = new Storage({
           projectId: PROJECT_ID,
-          keyFilename: 'editor-ilearn.json',
+          keyFilename: "editor-ilearn.json",
         });
 
-        const bucketName = 'sertif-ilearn';
+        const bucketName = "sertif-ilearn";
         const destinationFileName = `${name}-${courseName}.pdf`;
 
         await storage.bucket(bucketName).upload(pdfPath, {
           destination: destinationFileName,
           resumable: false,
           gzip: true,
-        })
+        });
 
-        const file = storage.bucket(bucketName).file(destinationFileName)
+        const file = storage.bucket(bucketName).file(destinationFileName);
 
-        await file.makePublic()
+        await file.makePublic();
 
         /* const [metadata] = await file.getMetadata(); */
         /* const publicUrl = metadata.mediaLink; */
@@ -202,7 +207,7 @@ module.exports = {
         const publicUrl = new URL(
           `https://storage.googleapis.com/${bucketName}/${destinationFileName}`
         );
-  
+
         fs.unlink(pdfPath, (err) => {
           if (err) {
             console.error("Error deleting file:", err);
@@ -211,29 +216,35 @@ module.exports = {
           console.log("Local certificate file deleted");
         });
 
+        return publicUrl;
+      };
 
-        return publicUrl
-      }
-
-      const pdfPath = await generatePDF()
+      const pdfPath = await generatePDF();
       const publicUrl = await uploadFileToGCS(pdfPath);
 
-      const courseNametoLinkedIn = encodeURIComponent(courseName)
-      const encodeCertUrl = encodeURIComponent(publicUrl)
-      const randomCode = Math.floor(1000000 + Math.random() * 9000000)
+      const courseNametoLinkedIn = encodeURIComponent(courseName);
+      const encodeCertUrl = encodeURIComponent(publicUrl);
+      const randomCode = Math.floor(1000000 + Math.random() * 9000000);
 
-      const addToLinkedIn = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${courseNametoLinkedIn}&organizationName=iLearnTech&issueYear=2024&issueMonth=1&expirationYear=2026&expirationMonth=5&certUrl=${encodeCertUrl}&certId=${randomCode}`
+      const addToLinkedIn = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${courseNametoLinkedIn}&organizationName=iLearnTech&issueYear=2024&issueMonth=1&expirationYear=2026&expirationMonth=5&certUrl=${encodeCertUrl}&certId=${randomCode}`;
 
       const saveCertificate = await db.certificate.create({
-        data:{
+        data: {
           addToLinkedin: addToLinkedIn,
           urlCertificate: publicUrl,
           courseId: course.id,
-          userId: user.id
-        }
-      })
+          userId: user.id,
+        },
+      });
 
-      return res.status(201).json(utils.apiSuccess(`Sertifikat berhasil dicetak dan disimpan di Google Cloud Storage`, saveCertificate));
+      return res
+        .status(201)
+        .json(
+          utils.apiSuccess(
+            `Sertifikat berhasil dicetak dan disimpan di Google Cloud Storage`,
+            saveCertificate
+          )
+        );
 
       /* ${gcsPath} */
     } catch (error) {
@@ -244,21 +255,29 @@ module.exports = {
 
   downloadCertificate: async (req, res) => {
     try {
-      const courseId = parseInt(req.params.courseId)
-      const userId = res.user.id
+      const courseId = parseInt(req.params.courseId);
+      const userId = res.user.id;
 
       const certificate = await db.certificate.findFirst({
         where: {
           userId: userId,
-          courseId: courseId
+          courseId: courseId,
         },
-      })
+      });
 
-      certificate.addToLinkedin = undefined
+      certificate.addToLinkedin = undefined;
 
-      if(!certificate) return res.status(404).json(utils.apiError("Tidak ada sertifikat"))
+      if (!certificate)
+        return res.status(404).json(utils.apiError("Tidak ada sertifikat"));
 
-      return res.status(200).json(utils.apiSuccess("Berhasil Mengambil Data Sertifikat Berdasarakan course id dan user id", certificate))
+      return res
+        .status(200)
+        .json(
+          utils.apiSuccess(
+            "Berhasil Mengambil Data Sertifikat Berdasarakan course id dan user id",
+            certificate
+          )
+        );
     } catch (error) {
       console.log(error);
       return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
@@ -267,24 +286,32 @@ module.exports = {
 
   linkedinCertificate: async (req, res) => {
     try {
-      const courseId = parseInt(req.params.courseId)
-      const userId = res.user.id
+      const courseId = parseInt(req.params.courseId);
+      const userId = res.user.id;
 
       const certificate = await db.certificate.findFirst({
         where: {
           userId: userId,
-          courseId: courseId
+          courseId: courseId,
         },
-      })
+      });
 
-      certificate.urlCertificate = undefined
+      certificate.urlCertificate = undefined;
 
-      if(!certificate) return res.status(404).json(utils.apiError("Tidak ada sertifikat"))
+      if (!certificate)
+        return res.status(404).json(utils.apiError("Tidak ada sertifikat"));
 
-      return res.status(200).json(utils.apiSuccess("Berhasil Mengambil Data Sertifikat Berdasarakan course id dan user id", certificate))
+      return res
+        .status(200)
+        .json(
+          utils.apiSuccess(
+            "Berhasil Mengambil Data Sertifikat Berdasarakan course id dan user id",
+            certificate
+          )
+        );
     } catch (error) {
       console.log(error);
       return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
     }
-  }
+  },
 };

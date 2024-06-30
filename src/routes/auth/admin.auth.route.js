@@ -1,12 +1,12 @@
-const express = require('express'),
-    schema = require('../../validation/auth.schema'),
-    validate = require('../../middlewares/validation'),
-    { verifyToken } = require('../../middlewares/verify.token'),
-    checkRole = require('../../middlewares/check.role'),
-    controller = require('../../controllers/auth'),
-    router = express.Router()
+const express = require("express");
+const schema = require("../../validation/auth.schema");
+const validate = require("../../middlewares/validation");
+const { verifyToken } = require("../../middlewares/verify.token");
+const checkRole = require("../../middlewares/check.role");
+const controller = require("../../controllers/auth");
+const router = express.Router();
 
-router.post('/admin/register', controller.authAdmin.register)
-router.post('/admin/login', controller.authAdmin.login)
+router.post("/admin/register", controller.authAdmin.register);
+router.post("/admin/login", controller.authAdmin.login);
 
-module.exports = router
+module.exports = router;

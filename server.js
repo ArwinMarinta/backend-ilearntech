@@ -1,12 +1,11 @@
 // const { PORT } = require("./src/config");
 
-const express = require("express"),
-  // { PORT } = require("./src/config"),
-  bodyParser = require("body-parser"),
-  cors = require("cors"),
-  router = require("./src/routes/index"),
-  /* rateLimiter = require('./middlewares/rate.limiter'), */
-  app = express();
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const router = require("./src/routes/index");
+/* rateLimiter = require('./middlewares/rate.limiter'), */
+const app = express();
 
 const PORT = 5000;
 

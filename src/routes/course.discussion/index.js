@@ -1,7 +1,7 @@
-const express = require("express"),
-  courseDiscussionROute = require('./course.discussion.route'),
-  router = express.Router();
+const express = require("express");
+const courseDiscussionROute = require("./course.discussion.route");
+const router = express.Router();
 
-router.use(courseDiscussionROute)
+router.use(courseDiscussionROute);
 
-module.exports = router
+module.exports = router;

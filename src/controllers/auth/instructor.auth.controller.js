@@ -1,139 +1,143 @@
-const db = require('../../../prisma/connection'),
-    utils = require('../../utils/utils'),
-    imageKitFile = require('../../utils/imageKitFile')
-   
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
+const imageKitFile = require("../../utils/imageKitFile");
 
 module.exports = {
-    register: async (req, res) => {
-        try {
+  register: async (req, res) => {
+    try {
+      if (!req.file)
+        return res.status(403).json(utils.apiError("Foto tidak boleh kosong"));
 
-                if (!req.file) return res.status(403).json(utils.apiError("Foto tidak boleh kosong"))
+      const photoInstructor = req.file;
+      const allowedMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+      const allowedSizeMb = 2;
 
-                const photoInstructor = req.file
-                const allowedMimes = [ "image/png","image/jpeg","image/jpg","image/webp" ]
-                const allowedSizeMb = 2
-    
-                if(!allowedMimes.includes(photoInstructor.mimetype)) return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"))
-    
-                if((photoInstructor.size / (1024*1024)) > allowedSizeMb) return res.status(409).json(utils.apiError("Gambar kategori tidak boleh lebih dari 2mb"))
-    
-                const uploadFile = await imageKitFile.upload(photoInstructor)
-    
-                if(!uploadFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
+      if (!allowedMimes.includes(photoInstructor.mimetype))
+        return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"));
 
-                const uploadFileUrl = uploadFile.url
-                const uploadFileName = uploadFile.name
+      if (photoInstructor.size / (1024 * 1024) > allowedSizeMb)
+        return res
+          .status(409)
+          .json(utils.apiError("Gambar kategori tidak boleh lebih dari 2mb"));
 
+      const uploadFile = await imageKitFile.upload(photoInstructor);
 
-            const { name, email, password } = req.body
+      if (!uploadFile)
+        return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
 
-            const checkEmail = await db.courseInstructor.findUnique({
-                where: {
-                    email: email
-                }
-            })
+      const uploadFileUrl = uploadFile.url;
+      const uploadFileName = uploadFile.name;
 
-            if(checkEmail) return res.status(409).json(utils.apiError("Email telah terdaftar"))
+      const { name, email, password } = req.body;
 
-            const hashPassword = await utils.createHashData(password)
+      const checkEmail = await db.courseInstructor.findUnique({
+        where: {
+          email: email,
+        },
+      });
 
-            const instructor = await db.courseInstructor.create({
-                data: {
-                    name: name,
-                    email: email,
-                    password: hashPassword,
-                    roleName: 'instructor',
-                    photoProfile: uploadFileUrl,
-                    imageFilename: uploadFileName
-                }
-            })
+      if (checkEmail)
+        return res.status(409).json(utils.apiError("Email telah terdaftar"));
 
-            const data = {
-                name: instructor.name,
-                email: instructor.email,
-                photoProfile: instructor.photoProfile
-            }
+      const hashPassword = await utils.createHashData(password);
 
-            return res.status(201).json(utils.apiSuccess("Instructor berhasil dibuat", data))
-            
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError('Kesalahan pada internal server'))
-        }
-    },
+      const instructor = await db.courseInstructor.create({
+        data: {
+          name: name,
+          email: email,
+          password: hashPassword,
+          roleName: "instructor",
+          photoProfile: uploadFileUrl,
+          imageFilename: uploadFileName,
+        },
+      });
 
-    login: async (req, res) => {
-        try {
+      const data = {
+        name: instructor.name,
+        email: instructor.email,
+        photoProfile: instructor.photoProfile,
+      };
 
-            const { email, password } = req.body
+      return res.status(201).json(utils.apiSuccess("Instructor berhasil dibuat", data));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
+    }
+  },
 
-            const instructor = await db.courseInstructor.findUnique({
-                where: {
-                  email: email,
-                },
-            })
+  login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
 
-            if (!instructor) return res.status(400).json(utils.apiError("Email tidak terdaftar"))
+      const instructor = await db.courseInstructor.findUnique({
+        where: {
+          email: email,
+        },
+      });
 
-            const verifyPassword = await utils.verifyHashData(password, instructor.password)
+      if (!instructor)
+        return res.status(400).json(utils.apiError("Email tidak terdaftar"));
 
-            if (!verifyPassword) return res.status(409).json(utils.apiError("Password salah"))
+      const verifyPassword = await utils.verifyHashData(password, instructor.password);
 
-            if(!instructor.roleName === 'instructor') return res.status(403).json(utils.apiError("Akses tidak diperbolehkan"))
+      if (!verifyPassword) return res.status(409).json(utils.apiError("Password salah"));
 
-            const payload = { id: instructor.id, roleName: instructor.roleName }
-            const token = await utils.createJwt(payload)
+      if (!instructor.roleName === "instructor")
+        return res.status(403).json(utils.apiError("Akses tidak diperbolehkan"));
 
-            const data = {
-                token: token
-            }
+      const payload = { id: instructor.id, roleName: instructor.roleName };
+      const token = await utils.createJwt(payload);
 
-            return res.status(200).json(utils.apiSuccess("Login berhasil", data))
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError('Kesalahan pada internal server'))
-        }
-    },
+      const data = {
+        token: token,
+      };
 
-    changePassword: async (req, res) => {
+      return res.status(200).json(utils.apiSuccess("Login berhasil", data));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
+    }
+  },
 
-        try {
-            
-            const instructorId = res.user.id
-            const {oldPassword, newPassword} = req.body
+  changePassword: async (req, res) => {
+    try {
+      const instructorId = res.user.id;
+      const { oldPassword, newPassword } = req.body;
 
-            const instructor = await db.courseInstructor.findUnique({
-                where:{
-                    id: instructorId
-                }
-            })
+      const instructor = await db.courseInstructor.findUnique({
+        where: {
+          id: instructorId,
+        },
+      });
 
+      if (!instructor)
+        return res.status(404).json(utils.apiError("User tidak ditemukkan"));
 
-            if(!instructor) return res.status(404).json(utils.apiError("User tidak ditemukkan"))
+      if (instructor.password) {
+        const verifyOldPassword = await utils.verifyHashData(
+          oldPassword,
+          instructor.password
+        );
 
-            if(instructor.password) {
-                const verifyOldPassword = await utils.verifyHashData(oldPassword, instructor.password)
+        if (!verifyOldPassword)
+          return res.status(409).json(utils.apiError("Password lama salah"));
+      }
 
-                if(!verifyOldPassword) return res.status(409).json(utils.apiError("Password lama salah"))
-            }
+      const hashPassword = await utils.createHashData(newPassword);
 
-            const hashPassword = await utils.createHashData(newPassword)
+      await db.courseInstructor.update({
+        where: {
+          id: instructorId,
+        },
+        data: {
+          password: hashPassword,
+        },
+      });
 
-            await db.courseInstructor.update({
-                where:{
-                    id: instructorId
-                },
-                data: {
-                    password: hashPassword
-                }
-            })
-
-            return res.status(200).json(utils.apiSuccess("Password berhasil diubah"))
-
-        } catch (error) {
-            console.log(error)
-            return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-        }
-    },
-    
-}
+      return res.status(200).json(utils.apiSuccess("Password berhasil diubah"));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
+    }
+  },
+};

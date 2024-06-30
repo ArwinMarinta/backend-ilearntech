@@ -1,14 +1,12 @@
-const db = require("../../../prisma/connection"),
-  utils = require("../../utils/utils");
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
 
 module.exports = {
   getAll: async (req, res) => {
     try {
       const type = await db.courseType.findMany();
 
-      return res
-        .status(200)
-        .json(utils.apiSuccess("Success fetch data catagory", type));
+      return res.status(200).json(utils.apiSuccess("Success fetch data catagory", type));
     } catch (error) {
       console.log(error);
       return res.status(500).json(utils.apiError("Internal Server Error"));
@@ -17,7 +15,7 @@ module.exports = {
   getById: async (req, res) => {
     try {
       const { id } = req.params;
-       
+
       const type = await db.courseType.findUnique({
         where: {
           id: parseInt(id),
@@ -28,9 +26,7 @@ module.exports = {
         return res.status(404).json(utils.apiError("type not found"));
       }
 
-      return res
-        .status(200)
-        .json(utils.apiSuccess("Success fetch data type", type));
+      return res.status(200).json(utils.apiSuccess("Success fetch data type", type));
     } catch (error) {
       console.log(error);
       return res.status(500).json(utils.apiError("Internal Server Error"));
@@ -60,7 +56,6 @@ module.exports = {
       const { name } = req.body;
       const nameSlug = await utils.createSlug(name);
       const id = parseInt(req.params.id);
-       
 
       const check = await db.courseType.findUnique({
         where: {
@@ -80,9 +75,7 @@ module.exports = {
         },
       });
 
-      return res
-        .status(200)
-        .json(utils.apiSuccess("Success update type", type));
+      return res.status(200).json(utils.apiSuccess("Success update type", type));
     } catch (error) {
       console.log(error);
       return res.status(500).json(utils.apiError("Internal Server Error"));
@@ -91,7 +84,6 @@ module.exports = {
   delete: async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-       
 
       const check = await db.courseType.findUnique({
         where: {

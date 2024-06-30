@@ -1,9 +1,9 @@
-const auth = require('./auth.controller'),
-    authAdmin = require('./admin.auth.controller'),
-    authInstructor = require('./instructor.auth.controller')
+const auth = require("./auth.controller");
+const authAdmin = require("./admin.auth.controller");
+const authInstructor = require("./instructor.auth.controller");
 
 module.exports = {
-    auth,
-    authAdmin,
-    authInstructor
-}
+  auth,
+  authAdmin,
+  authInstructor,
+};

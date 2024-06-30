@@ -1,5 +1,5 @@
-const db = require('../../../prisma/connection'),
-    utils = require('../../utils/utils')
+const db = require('../../../prisma/connection')
+   const utils = require('../../utils/utils')
 
 module.exports = {
     getAll: async (req, res) => {

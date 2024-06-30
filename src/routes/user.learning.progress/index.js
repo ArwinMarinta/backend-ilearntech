@@ -1,7 +1,7 @@
-const express = require("express"),
-    userLearningProgress = require('./user.learning.progress.route'),
-    router = express.Router()
-    
-router.use(userLearningProgress)
+const express = require("express");
+const userLearningProgress = require("./user.learning.progress.route");
+const router = express.Router();
 
-module.exports = router
+router.use(userLearningProgress);
+
+module.exports = router;

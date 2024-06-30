@@ -1,11 +1,11 @@
-const express = require("express"),
-    authRoute = require('./auth.route'),
-    authAdminRoute = require('./admin.auth.route'),
-    authInstructorRoute = require('./instructor.auth.route'),
-    router = express.Router()
-    
-router.use(authRoute)
-router.use(authAdminRoute)
-router.use(authInstructorRoute)
+const express = require("express");
+const authRoute = require("./auth.route");
+const authAdminRoute = require("./admin.auth.route");
+const authInstructorRoute = require("./instructor.auth.route");
+const router = express.Router();
 
-module.exports = router
+router.use(authRoute);
+router.use(authAdminRoute);
+router.use(authInstructorRoute);
+
+module.exports = router;

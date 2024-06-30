@@ -1,8 +1,8 @@
-const express = require('express'),
-    schema = require('../../validation/course.schema'),
-    validate = require('../../middlewares/validation'),
-    controller = require('../../controllers/user.course'),
-    router = express.Router()
+const express = require('express')
+   const schema = require('../../validation/course.schema')
+   const validate = require('../../middlewares/validation')
+  const controller = require('../../controllers/user.course')
+   const router = express.Router()
 
 router.get('/wishlist', controller.userWishlist.getAll)
 // router.post('/', validate(schema.type), controller.courseType.create)

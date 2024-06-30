@@ -1,6 +1,6 @@
-const db = require("../../../prisma/connection"),
-  utils = require("../../utils/utils"),
-  imageKitFile = require('../../utils/imageKitFile')
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
+const imageKitFile = require("../../utils/imageKitFile");
 
 module.exports = {
   getAll: async (req, res) => {
@@ -9,20 +9,16 @@ module.exports = {
 
       return res
         .status(200)
-        .json(
-          utils.apiSuccess("Berhasil Menampilkan Semua Data Kategori", category)
-        );
+        .json(utils.apiSuccess("Berhasil Menampilkan Semua Data Kategori", category));
     } catch (error) {
       console.log(error);
-      return res
-        .status(500)
-        .json(utils.apiError("Kesalahan pada Internal Server"));
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
     }
   },
   getById: async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       const category = await db.courseCategory.findUnique({
         where: {
           id: id,
@@ -32,82 +28,68 @@ module.exports = {
         },
       });
       if (!category) {
-        return res
-          .status(404)
-          .json(utils.apiError("Kategori tidak di temukan"));
+        return res.status(404).json(utils.apiError("Kategori tidak di temukan"));
       }
       return res
         .status(200)
         .json(
-          utils.apiSuccess(
-            "Berhasil mengambil data kategori berdasarkan id",
-            category
-          )
+          utils.apiSuccess("Berhasil mengambil data kategori berdasarkan id", category)
         );
     } catch (error) {
       console.log(error);
-      return res
-        .status(500)
-        .json(utils.apiError("Kesalahan pada Internal Server "));
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server "));
     }
   },
 
   create: async (req, res) => {
-
     try {
-
       const photoCategory = req.file;
-      const allowedMimes = [
-        "image/png",
-        "image/jpeg",
-        "image/jpg",
-        "image/webp",
-      ];
+      const allowedMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
       const allowedSizeMb = 2;
 
-      if(typeof photoCategory === 'undefined') return res.status(422).json(utils.apiError("Gambar kategori tidak boleh kosong"))
+      if (typeof photoCategory === "undefined")
+        return res.status(422).json(utils.apiError("Gambar kategori tidak boleh kosong"));
 
-      if(!allowedMimes.includes(photoCategory.mimetype)) return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"))
+      if (!allowedMimes.includes(photoCategory.mimetype))
+        return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"));
 
-      if((photoCategory.size / (1024*1024)) > allowedSizeMb) return res.status(409).json(utils.apiError("Gambar kategori tidak boleh lebih dari 2mb"))
+      if (photoCategory.size / (1024 * 1024) > allowedSizeMb)
+        return res
+          .status(409)
+          .json(utils.apiError("Gambar kategori tidak boleh lebih dari 2mb"));
 
-      const uploadFile = await imageKitFile.upload(photoCategory)
+      const uploadFile = await imageKitFile.upload(photoCategory);
 
-      if(!uploadFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
+      if (!uploadFile)
+        return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
 
       const { name, isPublished } = req.body;
 
-      console.log('===============================', isPublished)
+      console.log("===============================", isPublished);
 
       const nameSlug = await utils.createSlug(name);
 
-      const isPublishedBool = isPublished === 'true'
-      
+      const isPublishedBool = isPublished === "true";
+
       await db.courseCategory.create({
         data: {
           name: name,
           slug: nameSlug,
           isPublished: isPublishedBool,
           urlPhoto: uploadFile.url,
-          imageFileName: uploadFile.name
+          imageFileName: uploadFile.name,
         },
       });
 
-      return res
-        .status(200)
-        .json(utils.apiSuccess("Berhasil Menambah Kategori"));
-
+      return res.status(200).json(utils.apiSuccess("Berhasil Menambah Kategori"));
     } catch (error) {
       console.log(error);
-      return res
-        .status(500)
-        .json(utils.apiError("Kesalahan pada Internal Server"));
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
     }
   },
 
   update: async (req, res) => {
     try {
-     
       const id = parseInt(req.params.id);
 
       const checkCategory = await db.courseCategory.findUnique({
@@ -117,102 +99,96 @@ module.exports = {
       });
 
       if (!checkCategory)
-        return res
-          .status(404)
-          .json(utils.apiError("Kategori Tidak di temukan"));
+        return res.status(404).json(utils.apiError("Kategori Tidak di temukan"));
 
-      const photoCategory = req.file
-      const allowedMimes = [
-          'image/png',
-          'image/jpeg',
-          'image/jpg',
-          'image/webp'
-      ]
-      const allowedSizeMb = 2
+      const photoCategory = req.file;
+      const allowedMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+      const allowedSizeMb = 2;
 
       let imageUrl = null;
       let imageFileName = null;
 
-      if(typeof photoCategory === 'undefined') {
+      if (typeof photoCategory === "undefined") {
+        imageUrl = checkCategory.imageUrl;
+        imageFileName = checkCategory.imageFileName;
+      } else {
+        if (!allowedMimes.includes(photoCategory.mimetype))
+          return res
+            .status(409)
+            .json(utils.apiError("Format gambar tidak diperbolehkan"));
 
-          imageUrl = checkCategory.imageUrl
-          imageFileName = checkCategory.imageFileName
+        if (photoCategory.size / (1024 * 1024) > allowedSizeMb)
+          return res
+            .status(409)
+            .json(utils.apiError("Gambar kelas tidak boleh lebih dari 2mb"));
 
-      }else{
+        if (checkCategory.imageFileName != null) {
+          const deleteFile = await imageKitFile.delete(checkCategory.imageFileName);
+          if (!deleteFile)
+            return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
+        }
 
-          if(!allowedMimes.includes(photoCategory.mimetype)) return res.status(409).json(utils.apiError("Format gambar tidak diperbolehkan"))
+        const uploadFile = await imageKitFile.upload(photoCategory);
 
-          if((photoCategory.size / (1024*1024)) > allowedSizeMb) return res.status(409).json(utils.apiError("Gambar kelas tidak boleh lebih dari 2mb"))
+        if (!uploadFile)
+          return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
 
-          if(checkCategory.imageFileName != null) {
-              const deleteFile = await imageKitFile.delete(checkCategory.imageFileName)
-              if(!deleteFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-          }
-
-          const uploadFile = await imageKitFile.upload(photoCategory)
-
-          if(!uploadFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
-
-          imageUrl = uploadFile.url
-          imageFileName = uploadFile.name
+        imageUrl = uploadFile.url;
+        imageFileName = uploadFile.name;
       }
 
       const { name, isPublished } = req.body;
 
       const checkName = await db.courseCategory.findFirst({
-          where: {
-              name: name,
-              NOT: {
-                  id: id
-              }
-          }
-      })
+        where: {
+          name: name,
+          NOT: {
+            id: id,
+          },
+        },
+      });
 
-      if(checkName) return res.status(409).json(utils.apiError("Nama kategori sudah terdaftar"))
+      if (checkName)
+        return res.status(409).json(utils.apiError("Nama kategori sudah terdaftar"));
 
       const nameSlug = await utils.createSlug(name);
 
       await db.courseCategory.update({
         where: {
-          id: id,                     
+          id: id,
         },
         data: {
           name: name,
           slug: nameSlug,
           isPublished: Boolean(isPublished),
           urlPhoto: imageUrl,
-          imageFileName: imageFileName
+          imageFileName: imageFileName,
         },
       });
 
-      return res
-        .status(200)
-        .json(utils.apiSuccess("Berhasil mengubah kategori"));
+      return res.status(200).json(utils.apiSuccess("Berhasil mengubah kategori"));
     } catch (error) {
       console.log(error);
-      return res
-        .status(500)
-        .json(utils.apiError("Kesalahan pada Internal Server"));
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
     }
   },
 
   delete: async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       const check = await db.courseCategory.findUnique({
         where: {
           id: id,
         },
       });
-      
-      if (!check)
-        return res
-          .status(404)
-          .json(utils.apiError("Kategori tidak di temukan"));
 
-      const deleteFile = await imageKitFile.delete(check.imageFileName)
-      if(!deleteFile) return res.status(500).json(utils.apiError("Kesalahan pada internal server"))
+      if (!check)
+        return res.status(404).json(utils.apiError("Kategori tidak di temukan"));
+
+      const deleteFile = await imageKitFile.delete(check.imageFileName);
+      if (!deleteFile)
+        return res.status(500).json(utils.apiError("Kesalahan pada internal server"));
 
       await db.courseCategory.delete({
         where: {
@@ -220,14 +196,10 @@ module.exports = {
         },
       });
 
-      return res
-        .status(200)
-        .json(utils.apiSuccess("Berhasil menghapus kategori"));
+      return res.status(200).json(utils.apiSuccess("Berhasil menghapus kategori"));
     } catch (error) {
       console.log(error);
-      return res
-        .status(500)
-        .json(utils.apiError("Kesalahan pada Internal Server"));
+      return res.status(500).json(utils.apiError("Kesalahan pada Internal Server"));
     }
   },
 };

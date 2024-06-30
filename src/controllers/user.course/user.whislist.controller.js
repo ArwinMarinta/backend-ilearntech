@@ -1,5 +1,5 @@
-const db = require("../../../prisma/connection"),
-  utils = require("../../utils/utils");
+const db = require("../../../prisma/connection");
+const utils = require("../../utils/utils");
 
 module.exports = {
   getAll: async (req, res) => {
@@ -8,9 +8,7 @@ module.exports = {
 
       return res
         .status(200)
-        .json(
-          utils.apiSuccess("Berhasil menampilkan semua data wishList", wishList)
-        );
+        .json(utils.apiSuccess("Berhasil menampilkan semua data wishList", wishList));
     } catch (error) {
       console.log(error);
       return res.status(500).json(utils.apiError("Kesalahan dalam server"));
@@ -29,9 +27,7 @@ module.exports = {
     }
     return res
       .status(200)
-      .json(
-        utils.apiSuccess("Berhasil menampilkan satu data wishList", wishList)
-      );
+      .json(utils.apiSuccess("Berhasil menampilkan satu data wishList", wishList));
   },
   create: async (req, res) => {
     try {
