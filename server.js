@@ -10,17 +10,16 @@ const express = require("express"),
 
 const PORT = 5000;
 
-const corsConfig = {
-  origin: "",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-};
-
-app.use(cors(corsConfig));
-app.options("", cors(corsConfig));
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 /* app.use(rateLimiter) */
 app.use("/api/v1", router);
