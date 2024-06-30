@@ -14,7 +14,8 @@
     "resetDb": "node db.reset.js",
     "seed": "npx prisma db seed",
     "migrate": "prisma migrate deploy",
-    "build": "prisma generate && next build"
+    "build": "prisma generate && node server.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
